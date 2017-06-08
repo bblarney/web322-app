@@ -4,7 +4,7 @@
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: ___Brett Larney____ Student ID: _129308169_ Date: __June 8 2017__
+* Name: ___Brett Larney___ Student ID: _129308169_ Date: __June 8 2017__
 *
 * Online (Heroku) Link: ______https://afternoon-taiga-14912.herokuapp.com/______
 *
