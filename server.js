@@ -1,10 +1,10 @@
 /*********************************************************************************
-* WEB322 – Assignment 02
+* WEB322 – Assignment 03
 * I declare that this assignment is my own work in accordance with Seneca Academic Policy. No part
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: ___Brett Larney____ Student ID: _idk___ Date: __May 26 2017__
+* Name: ___Brett Larney____ Student ID: _129308169_ Date: __June 8 2017__
 *
 * Online (Heroku) Link: ______https://afternoon-taiga-14912.herokuapp.com/______
 *
@@ -102,7 +102,6 @@ app.use((req, res) => {
 });
 
 // setup http server to listen on HTTP_PORT
-
 data_service.initialize().then(() => {
   app.listen(HTTP_PORT, onHttpStart);
 }).catch((err) => {
