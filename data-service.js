@@ -3,6 +3,7 @@ var fs= require('fs');
 var message = "";
 var employees = [];
 var departments = [];
+var empCount = 0;
 
 module.exports.setMessage = (msg) => {
     return new Promise((resolve,reject)=>{
@@ -30,6 +31,7 @@ module.exports.initialize = () => {
                 reject(err);
             }
             employees = JSON.parse(data);
+            empCount = employees.length;
             fs.readFile('./data/departments.json', (err,data)=>{
                 if (err) reject(err);
                 departments = JSON.parse(data);
@@ -148,6 +150,26 @@ module.exports.getDepartments = () => {
         }
         else{
             reject("no results returned");
+        }
+    });
+}
+
+module.exports.addEmployee = (employeeData) => {
+    return new Promise((resolve, reject) => {
+        empCount++;
+        employeeData.employeeNum = empCount;
+        employees.push(employeeData);
+        resolve();
+    });
+}
+
+module.exports.updateEmployee = (employeeData) => {
+    return new Promise((resolve, reject) => {
+        for(var i=0; i<employees.length; i++){
+            if (employeeData.employeeNum == employees[i].employeeNum){
+                employees[i] = employeeData;
+                resolve();
+            }
         }
     });
 }
