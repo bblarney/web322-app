@@ -97,7 +97,7 @@ module.exports.getEmployeesByManager = (manager) => {
         var tempEmployees = [];
         var count = 0;
         for (var i=0; i<employees.length; i++){
-            if (employees[i].manager == manager){
+            if (employees[i].employeeManagerNum == manager){
                 tempEmployees[count] = employees[i];
                 count++;
             }
