@@ -56,17 +56,17 @@ module.exports.initialize = () => {
             Employee.create({
                 title: 'Employee1',
                 description: 'First Employee Table'
-            }).then(function (Employee){
-                Department.create({
-                    title: 'Department1',
-                    description: 'First DepartmentTable'
+            }).catch(function (error){
+                reject("unable to sync the database");
+            });
+
+            Department.create({
+                title: 'Department1',
+                description: 'First DepartmentTable'
                 }).then(function (Department){
                     resolve();
                 }).catch(function (error){
                     reject("unable to sync the database");
-                })
-            }).catch(function (error){
-                reject("unable to sync the database");
             });
         });
     });
@@ -99,7 +99,7 @@ module.exports.getEmployeesByStatus = (status) => {
 module.exports.getEmployeesByDepartment = (department) => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {departmentId: department}
+            where: {department: department}
         }).then(function(data){
             if (data)
                 resolve(data);
@@ -122,7 +122,7 @@ module.exports.getEmployeesByManager = (manager) => {
     });
 }
 
-module.exports.getEmployeesByNum = (num) => {
+module.exports.getEmployeeByNum = (num) => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
             where: {employeeNum: num}
@@ -138,7 +138,7 @@ module.exports.getEmployeesByNum = (num) => {
 module.exports.getManagers = () => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {isMAnager: true}
+            where: {isManager: true}
         }).then(function(data){
             if (data)
                 resolve(data);
@@ -208,7 +208,7 @@ module.exports.updateEmployee = (employeeData) => {
             }
         }
 
-        try{
+        sequelize.sync().then(function(){
             Employee.update({
                 firstName: employeeData.firstName,
                 last_name: employeeData.last_name,
@@ -222,16 +222,14 @@ module.exports.updateEmployee = (employeeData) => {
                 employeeManagerNum: employeeData.employeeManagerNum,
                 status: employeeData.status,
                 department: employeeData.department,
-                hireDate: employeeData.hireDate,
-              where: {employeeNum : employeeData.employeeNum}
+                hireDate: employeeData.hireDate},
+              {where: {employeeNum : employeeData.employeeNum}
+            }).then(()=> {
+                resolve();
+            }).catch((err) => {
+                reject(err);
             });
-        }
-        catch(err){
-            reject("unable to update employee");
-        }
-        finally{
-            resolve();
-        } 
+        });
     });
 }
 
@@ -261,29 +259,26 @@ module.exports.addDepartment = (departmentData) => {
 
 module.exports.updateDepartment = (departmentData) => {
     return new Promise(function (resolve, reject) {
-
         for (var prop in departmentData) {
             if (departmentData[prop] == ""){
                 departmentData[prop] = null;
             }
         }
-
-        try{
+        
+        sequelize.sync().then(function(){
             Department.update({
-                departmentName: departmentData.departmentName,
-                where: {departmentId : departmentData.departmentId}
+                departmentName: departmentData.departmentName},
+                {where: {departmentId : departmentData.departmentId}
+            }).then(()=> {
+                resolve();
+            }).catch((err) => {
+                reject(err);
             });
-        }
-        catch(err){
-            reject("unable to update department");
-        }
-        finally{
-            resolve();
-        }
+        });
     });
 }
 
-module.exports.getDepartmentsById = (id) => {
+module.exports.getDepartmentById = (id) => {
     return new Promise(function (resolve, reject) {
         Department.findAll({
             where: {departmentId: id}
