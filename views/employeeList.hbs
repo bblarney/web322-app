@@ -19,6 +19,7 @@
                         <th>Status</th>
                         <th>Department</th>
                         <th>Hired On</th>
+                        <th>Remove<th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,6 +33,7 @@
                         <td> <a href="/employees?status={{status}}">{{status}} </a></td> 
                         <td> <a href="/employees?department={{department}}">{{department}} </a></td> 
                         <td> {{hireDate}} </td> 
+                        <td> <a href="/employee/delete/{{employeeNum}}" class="btn btn-danger" value="remove"></a></td>
                     </tr>
                     {{/each}}
                 </body>

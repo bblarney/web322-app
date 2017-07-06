@@ -1,10 +1,10 @@
 /*********************************************************************************
-* WEB322 – Assignment 04
+* WEB322 – Assignment 05
 * I declare that this assignment is my own work in accordance with Seneca Academic Policy. No part
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: ___Brett Larney___ Student ID: _129308169_ Date: __June 17 2017__
+* Name: ___Brett Larney___ Student ID: _129308169_ Date: __July 6 2017__
 *
 * Online (Heroku) Link: ______https://afternoon-taiga-14912.herokuapp.com/______
 *
@@ -64,9 +64,23 @@ app.post("/employee/update", (req, res) => {
  });
 });
 
+app.post("/department/update", (req, res) => {
+ data_service.updateDepartment(req.body).then(() =>{
+  res.redirect("/departments");
+ }).catch((err) => {
+   console.log(err);
+ });
+});
+
 //route for adding employees
 app.get("/employees/add", (req,res) => {
-  res.render("addEmployee");
+
+  data_service.getDepartments().then(()=>{
+    res.render("addEmployee", {departments:data});
+  }).catch(err =>{
+    res.render("addEmployee", {departments: []});
+  });
+  
 });
 
 app.post("/employees/add", (req, res) => {
@@ -77,12 +91,63 @@ app.post("/employees/add", (req, res) => {
   });
 });
 
-// setup another route to listen on /employees
-app.get("/employee/:empNum", (req,res) => {
-   data_service.getEmployeesByNum(req.params.empNum).then((data) => {
-     res.render("employee", { data: data });
+app.get("/departments/add", (req,res) => {
+  res.render("addDepartment");
+});
+
+app.post("/departments/add", (req, res) => {
+  data_service.addDepartment(req.body).then(() =>{
+    res.redirect("/departments");
   }).catch((err) => {
+    console.log(err);
+  });
+});
+
+// setup another route to listen on /employees
+app.get("/employee/:empNum", (req, res) => {
+ // initialize an empty object to store the values
+ let viewData = {};
+ dataService.getEmployeeByNum(req.params.empNum)
+ .then((data) => {
+  viewData.data = data; //store employee data in the "viewData" object as "data"
+ }).catch(()=>{
+  viewData.data = null; // set employee to null if there was an error
+ }).then(dataService.getDepartments)
+  .then((data) => {
+  viewData.departments = data; // store department data in the "viewData" object as "departments"
+
+ // loop through viewData.departments and once we have found the departmentId that matches
+ // the employee's "department" value, add a "selected" property to the matching
+ // viewData.departments object
+ for (let i = 0; i < viewData.departments.length; i++) {
+  if (viewData.departments[i].departmentId == viewData.data.department) {
+    viewData.departments[i].selected = true;
+  }
+ }
+ }).catch(()=>{
+  viewData.departments=[]; // set departments to empty if there was an error
+ }).then(()=>{
+  if(viewData.data == null){ // if no employee - return an error
     res.status(404).send("Employee Not Found");
+  }else{
+    res.render("employee", { viewData: viewData }); // render the "employee" view
+  }
+ });
+});
+
+app.get("/employee/delete/:empNum", (req,res) => {
+  deleteEmployeeByNum(req.params.empNum).then(()=>{
+    res.redirect("employees");
+  }).catch(()=>{
+    res.status(500).send("Unable to remove employee");
+  })
+});
+
+app.get("/department/:departmentId", (req,res) => {
+   data_service.getDepartmentById(req.params.departmentId).then((data) => {
+     res.render("department", { data: data });
+  }).catch((err) => {
+    res.status(404).send("Department Not Found");
   });
 });
 
@@ -137,6 +202,8 @@ app.get("/departments", (req,res) => {
      res.render("departmentList", { data: {}, title:"Departments" });
   });
 });
+
+
 
 //page not found
 app.use((req, res) => {
