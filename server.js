@@ -75,9 +75,9 @@ app.post("/departments/update", (req, res) => {
 //route for adding employees
 app.get("/employees/add", (req,res) => {
 
-  data_service.getDepartments().then(()=>{
+  data_service.getDepartments().then((data)=>{
     res.render("addEmployee", {departments:data});
-  }).catch(err =>{
+  }).catch((err) =>{
     res.render("addEmployee", {departments: []});
   });
   
@@ -112,7 +112,7 @@ app.get("/employee/:empNum", (req, res) => {
  viewData.data = data; //store employee data in the "viewData" object as "data"
  }).catch(()=>{
  viewData.data = null; // set employee to null if there was an error
- }).then(data_service.getDepartments)
+ }).then(data_service.getDepartments())
  .then((data) => {
  viewData.departments = data; // store department data in the "viewData" object as "departments"
 

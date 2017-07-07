@@ -6,7 +6,11 @@ var sequelize = new Sequelize('dbu618hhi0mkcs', 'xjerudpbtgrbug', 'd5dda98f0e83e
     port: 5432,
     dialectOptions: {
         ssl: true
-    }
+    },
+    omitNull:true
+},{
+    createdAt: false, // disable createdAt
+    updatedAt: false // disable updatedAt
 });
 
 var Employee = sequelize.define('Employee', {
@@ -27,6 +31,9 @@ var Employee = sequelize.define('Employee', {
     status: Sequelize.STRING,
     department: Sequelize.INTEGER,
     hireDate: Sequelize.STRING,
+},{
+    createdAt: false, // disable createdAt
+    updatedAt: false // disable updatedAt
 });
 
 var Department = sequelize.define('Department', {
@@ -39,21 +46,26 @@ var Department = sequelize.define('Department', {
 
 module.exports.setMessage = (msg) => {
     return new Promise(function (resolve, reject) {
-        reject();
+        message = msg;
+        resolve();
     });
    
 };
 
 module.exports.getMessage = () => {
     return new Promise(function (resolve, reject) {
-        reject();
+        if(message.length > 0){
+            resolve(message)
+        }else{
+            reject("Oh No!");
+        }
     });
 }
 
 module.exports.initialize = () => {
     return new Promise(function (resolve, reject) {
         sequelize.sync().then(function() {
-            Employee.create({
+            /*Employee.create({
                 title: 'Employee1',
                 description: 'First Employee Table'
             }).catch(function (error){
@@ -62,22 +74,26 @@ module.exports.initialize = () => {
 
             Department.create({
                 title: 'Department1',
-                description: 'First DepartmentTable'
+                description: 'First Department Table'
                 }).then(function (Department){
                     resolve();
                 }).catch(function (error){
                     reject("unable to sync the database");
-            });
+            });*/
+            resolve();
+        }).catch((err) =>{
+            reject("unable to sync the database");
         });
     });
 }
 
 module.exports.getAllEmployees = () => {
     return new Promise(function (resolve, reject) {
-        Employee.findAll({}).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
+        Employee.findAll({
+            order: [['employeeNum','ASC']]
+        }).then(function(data){
+            resolve(data);
+        }).catch(() =>{
                 reject("no results returned");
         });
     });
@@ -86,12 +102,12 @@ module.exports.getAllEmployees = () => {
 module.exports.getEmployeesByStatus = (status) => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {status: status}
+            where: {status: status},
+            order: [['employeeNum','ASC']]
         }).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+            resolve(data);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
@@ -99,12 +115,12 @@ module.exports.getEmployeesByStatus = (status) => {
 module.exports.getEmployeesByDepartment = (department) => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {department: department}
+            where: {department: department},
+            order: [['employeeNum','ASC']]
         }).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+            resolve(data);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
@@ -112,12 +128,12 @@ module.exports.getEmployeesByDepartment = (department) => {
 module.exports.getEmployeesByManager = (manager) => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {employeeManagerNum: manager}
+            where: {employeeManagerNum: manager},
+            order: [['employeeNum','ASC']]
         }).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+            resolve(data);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
@@ -127,10 +143,9 @@ module.exports.getEmployeeByNum = (num) => {
         Employee.findAll({
             where: {employeeNum: num}
         }).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+            resolve(data[0]);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
@@ -138,23 +153,22 @@ module.exports.getEmployeeByNum = (num) => {
 module.exports.getManagers = () => {
     return new Promise(function (resolve, reject) {
         Employee.findAll({
-            where: {isManager: true}
+            where: {isManager: true},
+            order: [['employeeNum','ASC']]
         }).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+            resolve(data);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
 
 module.exports.getDepartments = () => {
     return new Promise(function (resolve, reject) {
-        Department.findAll({}).then(function(data){
-            if (data)
-                resolve(data);
-            else if (!data)
-                reject("no results returned");
+        Department.findAll({order: [['departmentId','ASC']]}).then(function(data){
+            resolve(data);
+        }).catch(() =>{
+            reject("no results returned");
         });
     });
 }
@@ -172,7 +186,6 @@ module.exports.addEmployee = (employeeData) => {
 
         try{
             Employee.create({
-                employeeNum: employeeData.employeeNum,
                 firstName: employeeData.firstName,
                 last_name: employeeData.last_name,
                 email: employeeData.email,
@@ -208,7 +221,7 @@ module.exports.updateEmployee = (employeeData) => {
             }
         }
 
-        sequelize.sync().then(function(){
+        try{
             Employee.update({
                 firstName: employeeData.firstName,
                 last_name: employeeData.last_name,
@@ -223,13 +236,15 @@ module.exports.updateEmployee = (employeeData) => {
                 status: employeeData.status,
                 department: employeeData.department,
                 hireDate: employeeData.hireDate},
-              {where: {employeeNum : employeeData.employeeNum}
-            }).then(()=> {
-                resolve();
-            }).catch((err) => {
-                reject(err);
+                {where: {employeeNum : employeeData.employeeNum}
             });
-        });
+        }
+        catch(err){
+            reject("unable to update employee");
+        }
+        finally{
+            resolve();
+        }
     });
 }
 
@@ -244,7 +259,6 @@ module.exports.addDepartment = (departmentData) => {
 
         try{
             Department.create({
-                departmentId: departmentData.departmentId,
                 departmentName: departmentData.departmentName
             });
         }
@@ -265,15 +279,13 @@ module.exports.updateDepartment = (departmentData) => {
             }
         }
         
-        sequelize.sync().then(function(){
-            Department.update({
-                departmentName: departmentData.departmentName},
-                {where: {departmentId : departmentData.departmentId}
-            }).then(()=> {
-                resolve();
-            }).catch((err) => {
-                reject(err);
-            });
+        Department.update({
+             departmentName: departmentData.departmentName},
+             {where: {departmentId : departmentData.departmentId}
+        }).then(()=> {
+              resolve();
+        }).catch((err) => {
+              reject(err);
         });
     });
 }
@@ -284,7 +296,7 @@ module.exports.getDepartmentById = (id) => {
             where: {departmentId: id}
         }).then(function(data){
             if (data)
-                resolve(data);
+                resolve(data[0]);
             else if (!data)
                 reject("no results returned");
         });
