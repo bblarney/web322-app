@@ -1,10 +1,10 @@
 /*********************************************************************************
-* WEB322 – Assignment 05
+* WEB322 – Assignment 06
 * I declare that this assignment is my own work in accordance with Seneca Academic Policy. No part
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: ___Brett Larney___ Student ID: _129308169_ Date: __July 7 2017__
+* Name: ___Brett Larney___ Student ID: _129308169_ Date: __July 16 2017__
 *
 * Online (Heroku) Link: ______https://afternoon-taiga-14912.herokuapp.com/______
 *
@@ -17,6 +17,8 @@ var app = express();
 var fs = require("fs");
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
+const dataServiceComments = require("./data-service-comments.js");
+ 
 
 app.use(express.static('public'));
 
@@ -52,7 +54,12 @@ app.get("/", (req,res) => {
 
 // setup another route to listen on /about
 app.get("/about", (req,res) =>{
-   res.render("about");
+  dataServiceComments.getAllComments().then((dataFromPromise)=>{
+    res.render("about",{data:dataFromPromise});
+  }).catch((err)=>{
+    res.render("about");
+  });
+   
 });
 
 //route for updating employees
@@ -204,6 +211,26 @@ app.get("/departments", (req,res) => {
   });
 });
 
+//addcomment post route
+app.post("/about/addComment", (req,res) => {
+  dataServiceComments.addComment(req.body).then(()=>{
+    res.redirect("/about");
+  }).catch((err)=>{
+    console.log(err);
+    res.redirect("/about");
+  });
+});
+
+//addreply post route
+app.post("/about/addReply", (req,res) => {
+  dataServiceComments.addReply(req.body).then(()=>{
+    res.redirect("/about");
+  }).catch((err)=>{
+    console.log(err);
+    res.redirect("/about");
+  });
+});
+
 
 
 //page not found
@@ -212,7 +239,8 @@ app.use((req, res) => {
 });
 
 // setup http server to listen on HTTP_PORT
-data_service.initialize().then(() => {
+data_service.initialize().then(dataServiceComments.initialize())
+.then(() => {
   app.listen(HTTP_PORT, onHttpStart);
 }).catch((err) => {
   console.log(err);
