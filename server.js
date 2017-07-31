@@ -15,9 +15,11 @@ var express = require("express");
 var path = require("path");
 var app = express();
 var fs = require("fs");
+var clientSessions = require("client-sessions");
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const dataServiceComments = require("./data-service-comments.js");
+const dataServiceAuth = require("./data-service-auth.js")
  
 
 app.use(express.static('public'));
@@ -38,6 +40,19 @@ app.engine(".hbs", exphbs({
     }
   }
 }));
+
+app.use(clientSessions({
+  cookieName: "session", // this is the object name that will be added to 'req'
+  secret: "assignment7blarney_web322", // this should be a long un-guessable string.
+  duration: 2 * 60 * 1000, // duration of the session in milliseconds (2 minutes)
+  activeDuration: 1000 * 60 // the session will be extended by this many ms each request (1 minute)
+}));
+
+app.use(function(req, res, next) {
+ res.locals.session = req.session;
+ next();
+});
+
 app.set("view engine", ".hbs");
 
 var HTTP_PORT = process.env.PORT || 8080;
@@ -45,6 +60,14 @@ var HTTP_PORT = process.env.PORT || 8080;
 // call this function after the http server starts listening for requests
 function onHttpStart() {
   console.log("Express http server listening on: " + HTTP_PORT);
+}
+
+function ensureLogin(req, res, next) {
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else {
+    next();
+  }
 }
 
 // setup a 'route' to listen on the default url path (http://localhost)
@@ -63,55 +86,53 @@ app.get("/about", (req,res) =>{
 });
 
 //route for updating employees
-app.post("/employee/update", (req, res) => {
- data_service.updateEmployee(req.body).then(() =>{
-  res.redirect("/employees");
- }).catch((err) => {
-   console.log(err);
- });
+app.post("/employee/update", ensureLogin, (req, res) => {
+    data_service.updateEmployee(req.body).then(() =>{
+     res.redirect("/employees");
+    }).catch((err) => {
+      console.log(err);
+    });
 });
 
-app.post("/departments/update", (req, res) => {
- data_service.updateDepartment(req.body).then(() =>{
-  res.redirect("/departments");
- }).catch((err) => {
-   console.log(err);
- });
+app.post("/departments/update", ensureLogin, (req, res) => {
+    data_service.updateDepartment(req.body).then(() =>{
+      res.redirect("/departments");
+    }).catch((err) => {
+      console.log(err);
+    });
 });
 
 //route for adding employees
-app.get("/employees/add", (req,res) => {
-
-  data_service.getDepartments().then((data)=>{
-    res.render("addEmployee", {departments:data});
-  }).catch((err) =>{
-    res.render("addEmployee", {departments: []});
-  });
-  
+app.get("/employees/add", ensureLogin, (req,res) => {
+    data_service.getDepartments().then((data)=>{
+     res.render("addEmployee", {departments:data});
+    }).catch((err) =>{
+      res.render("addEmployee", {departments: []});
+    });
 });
 
-app.post("/employees/add", (req, res) => {
-  data_service.addEmployee(req.body).then(() =>{
-    res.redirect("/employees");
-  }).catch((err) => {
-    console.log(err);
-  });
+app.post("/employees/add", ensureLogin, (req, res) => {
+    data_service.addEmployee(req.body).then(() =>{
+      res.redirect("/employees");
+    }).catch((err) => {
+     console.log(err);
+    });
 });
 
-app.get("/departments/add", (req,res) => {
-  res.render("addDepartment");
+app.get("/departments/add", ensureLogin, (req,res) => {
+    res.render("addDepartment");
 });
 
-app.post("/departments/add", (req, res) => {
-  data_service.addDepartment(req.body).then(() =>{
-    res.redirect("/departments");
-  }).catch((err) => {
-    console.log(err);
-  });
+app.post("/departments/add", ensureLogin, (req, res) => {
+    data_service.addDepartment(req.body).then(() =>{
+     res.redirect("/departments");
+   }).catch((err) => {
+     console.log(err);
+   });
 });
 
 // setup another route to listen on /employees
-app.get("/employee/:empNum", (req, res) => {
+app.get("/employee/:empNum", ensureLogin, (req, res) => {
  // initialize an empty object to store the values
  let viewData = {};
  data_service.getEmployeeByNum(req.params.empNum)
@@ -139,19 +160,19 @@ app.get("/employee/:empNum", (req, res) => {
  }else{
  res.render("employee", { viewData: viewData }); // render the "employee" view
  }
- });
+});
 });
 
 
-app.get("/employee/delete/:empNum", (req,res) => {
-  data_service.deleteEmployeeByNum(req.params.empNum).then(()=>{
-    res.redirect("/employees");
-  }).catch(()=>{
-    res.status(500).send("Unable to remove employee");
-  })
+app.get("/employee/delete/:empNum", ensureLogin, (req,res) => {
+   data_service.deleteEmployeeByNum(req.params.empNum).then(()=>{
+      res.redirect("/employees");
+   }).catch(()=>{
+      res.status(500).send("Unable to remove employee");
+   });
 });
 
-app.get("/department/:departmentId", (req,res) => {
+app.get("/department/:departmentId", ensureLogin, (req,res) => {
    data_service.getDepartmentById(req.params.departmentId).then((data) => {
      res.render("department", { data: data });
   }).catch((err) => {
@@ -160,8 +181,7 @@ app.get("/department/:departmentId", (req,res) => {
 });
 
 // setup another route to listen on /employees
-app.get("/employees", (req, res) => {
-
+app.get("/employees", ensureLogin, (req, res) => {
     if(req.query.status){
 
       data_service.getEmployeesByStatus(req.query.status).then((data) => {
@@ -194,7 +214,7 @@ app.get("/employees", (req, res) => {
 });
 
 // setup another route to listen on /employees
-app.get("/managers", (req,res) => {
+app.get("/managers", ensureLogin, (req,res) => {
    data_service.getManagers().then((data) => {
      res.render("employeeList", { data: data, title: "Employees(Managers)" });
   }).catch((err) => {
@@ -203,7 +223,7 @@ app.get("/managers", (req,res) => {
 });
 
 // setup another route to listen on /employees
-app.get("/departments", (req,res) => {
+app.get("/departments", ensureLogin, (req,res) => {
   data_service.getDepartments().then((data) => {
      res.render("departmentList", { data: data, title:"Departments" });
   }).catch((err) => {
@@ -231,7 +251,37 @@ app.post("/about/addReply", (req,res) => {
   });
 });
 
+app.get("/login", (req,res) => {
+  res.render("login");
+});
 
+app.get("/register", (req,res) => {
+    res.render("register");
+});
+
+app.post("/register", (req,res) => {
+  dataServiceAuth.registerUser(req.body).then(()=>{
+    res.render("register", {successMessage: "User created"});
+  }).catch((err)=>{
+    res.render("register", {errorMessage: err, user: req.body.user});
+  });
+});
+
+app.post("/login", (req,res) => {
+  dataServiceAuth.checkUser(req.body).then(()=>{
+    req.session.user ={
+      username: req.body.user
+    };
+    res.redirect("/employees");
+  }).catch((err)=>{
+    res.render("login", {errorMessage: err, user: req.body.user});
+  });
+});
+
+app.get("/logout", (req,res) => {
+  req.session.reset();
+  res.redirect("/");
+});
 
 //page not found
 app.use((req, res) => {
@@ -239,7 +289,9 @@ app.use((req, res) => {
 });
 
 // setup http server to listen on HTTP_PORT
-data_service.initialize().then(dataServiceComments.initialize())
+data_service.initialize()
+.then(dataServiceComments.initialize)
+.then(dataServiceAuth.initialize)
 .then(() => {
   app.listen(HTTP_PORT, onHttpStart);
 }).catch((err) => {
