@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 let Schema = mongoose.Schema;
 
 var userSchema = new Schema({
@@ -29,16 +30,27 @@ module.exports.registerUser = function (userData) {
         }
         else{
             let newUser = new User(userData);
-            newUser.save((err) => {
-            if(err == 11000) {
-                reject("Username already taken");
-            } else if (err && err != 11000) {
-                reject("There was an error creating the user: " + err);
-            }
-            else{
-                resolve();
-            }
-        });  
+
+            bcrypt.genSalt(10, function(err, salt) { // Generate a "salt" using 10 rounds
+                bcrypt.hash(userData.password, salt, function(err, hash) { // encrypt the password: "myPassword123"
+                    // TODO: Store the resulting "hash" value in the DB
+                    if (err){
+                        reject("There was an error encrypting the password");
+                    }else{
+                        newUser.password = hash;
+                        newUser.save((err) => {
+                            if(err == 11000) {
+                                reject("Username already taken");
+                            } else if (err && err != 11000) {
+                                reject("There was an error creating the user: " + err);
+                            }
+                            else{
+                                resolve();
+                            }
+                        });
+                    }
+                });
+            });  
         }
     });
 };
@@ -51,14 +63,47 @@ module.exports.checkUser = function (userData) {
             if (data.user == ""){
                 reject("unable to find user: " + userData.user);
             }
-            if (data[0].password == userData.password){
-                resolve();
-            }
-            else{
-                reject("incorrect password for user: "+ userData.user);
-            }
+            console.log(userData.password);
+
+            bcrypt.compare(userData.password, data[0].password).then((res) => {
+                if (res === true){
+                     resolve();
+                }else{
+                    reject("Incorrect password");
+                }
+            });
         }).catch((err) => {
             reject("unable to find user: " + userData.user + err);
         });
+    });
+};
+
+module.exports.updatePassword = function (userData) {
+    return new Promise(function (resolve, reject) {
+
+        if (userData.password != userData.password2){
+            reject("Passwords do not match");
+        }
+        else{
+            bcrypt.genSalt(10, function(err, salt) { // Generate a "salt" using 10 rounds
+                bcrypt.hash(userData.password, salt, function(err, hash) { // encrypt the password: "myPassword123"
+                    // TODO: Store the resulting "hash" value in the DB
+                    if (err){
+                        reject("There was an error encrypting the password");
+                    }else{
+                        User.find({user: userData.user})
+                        .exec()
+                        .then((data) => {
+                            User.update({ user: userData.user },
+                            { $set: { password: hash } },
+                            { multi: false })
+                            .exec()
+                            .then(resolve())
+                            .catch(reject("There was an error updating the password for" + userDatas.user));
+                        });
+                    }
+                });
+            });  
+        }
     });
 };

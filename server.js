@@ -1,10 +1,10 @@
 /*********************************************************************************
-* WEB322 – Assignment 06
+* WEB322 – Assignment 08
 * I declare that this assignment is my own work in accordance with Seneca Academic Policy. No part
 * of this assignment has been copied manually or electronically from any other source
 * (including 3rd party web sites) or distributed to other students.
 *
-* Name: ___Brett Larney___ Student ID: _129308169_ Date: __July 16 2017__
+* Name: ___Brett Larney___ Student ID: _129308169_ Date: __August 11 2017__
 *
 * Online (Heroku) Link: ______https://afternoon-taiga-14912.herokuapp.com/______
 *
@@ -23,8 +23,9 @@ const dataServiceAuth = require("./data-service-auth.js")
  
 
 app.use(express.static('public'));
-
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 app.engine(".hbs", exphbs({
   extname: ".hbs",
   defaultLayout: 'layout',
@@ -282,6 +283,19 @@ app.get("/logout", (req,res) => {
   req.session.reset();
   res.redirect("/");
 });
+
+app.post("/api/updatePassword", (req,res) => {
+  dataServiceAuth.checkUser({ user: req.body.user, password: req.body.currentPassword }).then(()=>{
+    dataServiceAuth.updatePassword(req.body).then(()=>{
+      res.send({successMessage: "Password changed successfully for user: " + req.body.user});
+    }).catch((err)=>{
+      res.send({errorMessage: err});
+    });
+  }).catch((err)=>{
+    res.send({errorMessage: err});
+  });
+});
+
 
 //page not found
 app.use((req, res) => {
