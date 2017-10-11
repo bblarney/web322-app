@@ -12,3 +12,5 @@ which was used to store user login information as well as all of the employees i
 
 3. From this project I learned a lot about different web tools that can be used to create a powerful web application.
 I learned how to store and retrieve login information from a cloud database, as well as any other data.
+
+needs a valid connection string to function
